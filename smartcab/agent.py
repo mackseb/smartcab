@@ -24,6 +24,9 @@ class LearningAgent(Agent):
         ###########
         # Set any additional class parameters as needed
 
+        self.initial_q = dict((k, 0.0) for k in self.valid_actions)
+        self.trials=0
+
 
     def reset(self, destination=None, testing=False):
         """ The reset function is called at the beginning of each trial.
@@ -39,6 +42,16 @@ class LearningAgent(Agent):
         # Update epsilon using a decay function of your choice
         # Update additional class parameters as needed
         # If 'testing' is True, set epsilon and alpha to 0
+
+        if testing:
+            self.epsilon = 0
+            self.alpha = 0
+        else:
+            # Use negative exponential e^(-at) decay function
+            self.epsilon = math.exp(-self.alpha*self.t)
+            self.trials += 1
+
+        return None
 
         return None
 
@@ -90,7 +103,7 @@ class LearningAgent(Agent):
         #   Then, for each action available, set the initial Q-value to 0.0
 
         if self.learning and (state not in self.Q):
-            dict(zip(self.valid_actions, [0.0 for i in self.valid_actions]))
+            self.Q[state] = self.initial_q.copy()
 
         return
 
@@ -108,11 +121,18 @@ class LearningAgent(Agent):
         ## TO DO ##
         ###########
         # When not learning, choose a random action
-        if not self.learning:
-            action = random.choice(self.valid_actions)
         # When learning, choose a random action with 'epsilon' probability
         # Otherwise, choose an action with the highest Q-value for the current state
         # Be sure that when choosing an action with highest Q-value that you randomly select between actions that "tie".
+                
+        if not self.learning or random.random() <= self.epsilon:
+            action = random.choice(self.valid_actions)
+        else:
+            maxQ = self.get_maxQ(state)
+            maxQ_actions = [action for action, q_value in self.Q[state].items() if q_value == maxQ]
+            action = random.choice(maxQ_actions)
+
+
         return action
 
 
@@ -126,6 +146,9 @@ class LearningAgent(Agent):
         ###########
         # When learning, implement the value iteration update rule
         #   Use only the learning rate 'alpha' (do not use the discount factor 'gamma')
+
+        if self.learning:
+            self.Q[state][action] = reward * self.alpha + self.Q[state][action] * (1.0 - self.alpha)
 
         return
 
