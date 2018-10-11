@@ -10,6 +10,7 @@ import time
 import random
 import importlib
 import csv
+import pandas as pd
 
 class Simulator(object):
     """Simulates agents in a dynamic smartcab environment.
@@ -94,6 +95,7 @@ class Simulator(object):
             if a.learning:
                 if self.optimized: # Whether the user is optimizing the parameters and decay functions
                     self.log_filename = os.path.join("logs", "sim_improved-learning.csv")
+                    self.pandas_filename = os.path.join("logs", "sim_improved-learning_pandas.csv")
                     self.table_filename = os.path.join("logs","sim_improved-learning.txt")
                 else: 
                     self.log_filename = os.path.join("logs", "sim_default-learning.csv")
@@ -233,12 +235,18 @@ class Simulator(object):
                 f.write("/-----------------------------------------\n")
                 f.write("| State-action rewards from Q-Learning\n")
                 f.write("\-----------------------------------------\n\n")
-
+                df = pd.DataFrame()
                 for state in a.Q:
                     f.write("{}\n".format(state))
                     for action, reward in a.Q[state].iteritems():
                         f.write(" -- {} : {:.2f}\n".format(action, reward))
-                    f.write("\n")  
+                    f.write("\n")
+                    series = pd.Series(a.Q[state])
+                    series = series.append(pd.Series({"waypoint": state[0],"light": state[1], "intended_dir_oncoming": state[2],"intended_dir_left": state[3]}))
+                    df = df.append(series, ignore_index=True)
+
+                df.to_csv(self.pandas_filename)    
+                    
                 self.table_file.close()
 
             self.log_file.close()
